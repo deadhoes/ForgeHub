@@ -1,0 +1,223 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "ForgeHub: Steal a Capybara Script" .. Fluent.Version,
+    SubTitle = "ForgeTeam",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true, -- The blur may be detectable, setting this to false disables blur entirely
+    Theme = "Darker",
+    MinimizeKey = Enum.KeyCode.LeftControl -- Used when theres no MinimizeKeybind
+})
+
+--Fluent provides Lucide Icons https://lucide.dev/icons/ for the tabs, icons are optional
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+do
+
+
+
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local LocalPlayer = Players.LocalPlayer
+
+local running = false
+
+local function getAntNameFromTool(tool)
+    local toolName = tool.Name
+    local antName = toolName:gsub("%s*Egg$", "")
+    return antName
+end
+
+local Toggle = Tabs.Main:AddToggle("AutoUseEgg", {Title = "Auto Place Eggs", Default = false})
+
+Toggle:OnChanged(function()
+	running = Options.AutoUseEgg.Value
+
+	if running then
+		task.spawn(function()
+			while running do
+				local backpack = LocalPlayer:FindFirstChild("Backpack")
+				if backpack then
+					local tool = nil
+					for _, t in pairs(backpack:GetChildren()) do
+						if t:IsA("Tool") and t.Name:find("Egg") then
+							tool = t
+							break
+						end
+					end
+
+					if tool then
+						local antName = getAntNameFromTool(tool)
+						local args = {
+							antName,
+							tool
+						}
+						ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("UseEgg"):FireServer(unpack(args))
+					end
+				end
+				task.wait(0.1)
+			end
+		end)
+	end
+end)
+
+Options.AutoUseEgg:SetValue(false)
+
+
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local LocalPlayer = Players.LocalPlayer
+
+local antNames = {
+    "Basic Ant",
+    "Bullet Ant",
+    "Titan Ant",
+    "Crystal Ant",
+    "Golden Ant",
+    "Yellow Crazy Ant",
+    "Fire Ant",
+}
+
+local MultiDropdown = Tabs.Main:AddDropdown("MultiDropdown", {
+    Title = "Select Ants to Buy",
+    Values = antNames,
+    Multi = true,
+    Default = {},
+})
+
+MultiDropdown:SetValue({})
+
+local selectedAnts = {}
+
+MultiDropdown:OnChanged(function(value)
+    selectedAnts = {}
+    for name, isSelected in pairs(value) do
+        if isSelected then
+            selectedAnts[name] = true
+        end
+    end
+end)
+
+local Toggle = Tabs.Main:AddToggle("AutoFireProximity", {
+    Title = "Auto Buy Ants",
+    Default = false,
+})
+
+local running = false
+
+Toggle:OnChanged(function(value)
+    running = value
+    if running then
+        task.spawn(function()
+            while running do
+                local eggsFolder = workspace:FindFirstChild("Eggs")
+                if eggsFolder then
+                    for _, model in ipairs(eggsFolder:GetChildren()) do
+                        if model:IsA("Model") and selectedAnts[model.Name] then
+                            local hrp = model:FindFirstChild("HumanoidRootPart")
+                            if hrp then
+                                for _, prompt in ipairs(hrp:GetChildren()) do
+                                    if prompt:IsA("ProximityPrompt") and prompt.Name == "ProximityPrompt" then
+                                        fireproximityprompt(prompt, 0, true)
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+Options.AutoFireProximity:SetValue(false)
+
+
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+
+local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local hrp = character:WaitForChild("HumanoidRootPart")
+
+local Toggle = Tabs.Main:AddToggle("AutoFireTouchTokens", {
+    Title = "Auto Collect Seed Tokens",
+    Default = false,
+})
+
+local running = false
+
+local function fireTouch(part)
+    if not hrp or not part then return end
+
+    firetouchinterest(hrp, part, 0)
+    firetouchinterest(hrp, part, 1)
+end
+
+Toggle:OnChanged(function(value)
+    running = value
+
+    if running then
+        task.spawn(function()
+            while running do
+                local folder = workspace:FindFirstChild("Tokens")
+                if folder then
+                    for _, part in ipairs(folder:GetDescendants()) do
+                        if part:IsA("BasePart") and part:FindFirstChildWhichIsA("TouchTransmitter") then
+                            fireTouch(part)
+                        end
+                    end
+                end
+                task.wait(0.1)
+            end
+        end)
+    end
+end)
+
+Options.AutoFireTouchTokens:SetValue(false)
+
+
+
+
+
+-- Addons:
+-- SaveManager (Allows you to have a configuration system)
+-- InterfaceManager (Allows you to have a interface managment system)
+
+-- Hand the library over to our managers
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+-- Ignore keys that are used by ThemeManager.
+-- (we dont want configs to save themes, do we?)
+SaveManager:IgnoreThemeSettings()
+
+-- You can add indexes of elements the save manager should ignore
+SaveManager:SetIgnoreIndexes({})
+
+-- use case for doing it this way:
+-- a script hub could have themes in a global folder
+-- and game configs in a separate folder per game
+InterfaceManager:SetFolder("ForgeCloud")
+SaveManager:SetFolder("ForgeCloud/steal-a-brainrot")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+Window:SelectTab(1)
+
+-- You can use the SaveManager:LoadAutoloadConfig() to load a config
+-- which has been marked to be one that auto loads!
+SaveManager:LoadAutoloadConfig()
+end
