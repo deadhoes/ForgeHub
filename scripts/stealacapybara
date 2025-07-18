@@ -3,8 +3,8 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "ForgeHub: Steal a Capybara Script" .. Fluent.Version,
-    SubTitle = "ForgeTeam",
+    Title = "ForgeHub" .. Fluent.Version,
+    SubTitle = "Steal a Capybara",
     TabWidth = 160,
     Size = UDim2.fromOffset(450, 350),
     Acrylic = false, -- The blur may be detectable, setting this to false disables blur entirely
@@ -35,6 +35,7 @@ Toggle:OnChanged(function()
             while Options.AutoTouchLocks.Value do
                 local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 if hrp then
+				    wait(2)
                     local plots = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Plots")
                     if plots then
                         for i = 1, 8 do
@@ -72,6 +73,7 @@ Toggle:OnChanged(function()
             while Options.AutoTouchCollectPads.Value do
                 local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
                 if hrp then
+				    wait(2)
                     local plots = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Plots")
                     if plots then
                         for i = 1, 8 do
@@ -208,7 +210,7 @@ SaveManager:SetIgnoreIndexes({})
 -- a script hub could have themes in a global folder
 -- and game configs in a separate folder per game
 InterfaceManager:SetFolder("ForgeCloud")
-SaveManager:SetFolder("ForgeCloud/steal-a-capybara")
+SaveManager:SetFolder("ForgeCloud/steal-a-brainrot")
 
 InterfaceManager:BuildInterfaceSection(Tabs.Settings)
 SaveManager:BuildConfigSection(Tabs.Settings)
