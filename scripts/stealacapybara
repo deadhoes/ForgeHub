@@ -1,0 +1,222 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "ForgeHub: Steal a Capybara Script" .. Fluent.Version,
+    SubTitle = "ForgeTeam",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(450, 350),
+    Acrylic = false, -- The blur may be detectable, setting this to false disables blur entirely
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.RightControl -- Used when theres no MinimizeKeybind
+})
+
+--Fluent provides Lucide Icons https://lucide.dev/icons/ for the tabs, icons are optional
+local Tabs = {
+    Main = Window:AddTab({ Title = "Main", Icon = "home" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+do
+
+
+local Toggle = Tabs.Main:AddToggle("AutoTouchLocks", {
+    Title = "Auto Lock Base",
+    Default = false
+})
+
+Toggle:OnChanged(function()
+    print("Toggle changed:", Options.AutoTouchLocks.Value)
+    if Options.AutoTouchLocks.Value then
+        task.spawn(function()
+            while Options.AutoTouchLocks.Value do
+                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local plots = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Plots")
+                    if plots then
+                        for i = 1, 8 do
+                            local plot = plots:FindFirstChild(tostring(i))
+                            if plot and plot:FindFirstChild("LockBase") then
+                                local part = plot.LockBase
+                                if part:FindFirstChildOfClass("TouchTransmitter") then
+                                    firetouchinterest(hrp, part, 0)
+                                    task.wait()
+                                    firetouchinterest(hrp, part, 1)
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.01)
+            end
+        end)
+    end
+end)
+
+Options.AutoTouchLocks:SetValue(false)
+
+
+
+local Toggle = Tabs.Main:AddToggle("AutoTouchCollectPads", {
+    Title = "Auto Collect Cash",
+    Default = false
+})
+
+Toggle:OnChanged(function()
+    print("Toggle changed:", Options.AutoTouchCollectPads.Value)
+    if Options.AutoTouchCollectPads.Value then
+        task.spawn(function()
+            while Options.AutoTouchCollectPads.Value do
+                local hrp = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local plots = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Plots")
+                    if plots then
+                        for i = 1, 8 do
+                            local plot = plots:FindFirstChild(tostring(i))
+                            if plot and plot:FindFirstChild("Pads") then
+                                for j = 1, 10 do
+                                    local pad = plot.Pads:FindFirstChild(tostring(j))
+                                    if pad and pad:FindFirstChild("Collect") then
+                                        local collectPart = pad.Collect
+                                        if collectPart:FindFirstChildOfClass("TouchTransmitter") then
+                                            firetouchinterest(hrp, collectPart, 0)
+                                            task.wait()
+                                            firetouchinterest(hrp, collectPart, 1)
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.01)
+            end
+        end)
+    end
+end)
+
+Options.AutoTouchCollectPads:SetValue(false)
+
+
+
+Tabs.Main:AddButton({
+    Title = "Complete Steal",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        local character = player and player.Character
+        local hrp = character and character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            hrp.CFrame = CFrame.new(51, 4, -36)
+            print("")
+        else
+            warn("")
+        end
+    end
+})
+
+
+
+Tabs.Main:AddButton({
+    Title = "Delete Laser Walls",
+    Callback = function()
+        local plots = workspace:FindFirstChild("Game") and workspace.Game:FindFirstChild("Plots")
+        if plots then
+            for _, plot in ipairs(plots:GetChildren()) do
+                if plot:IsA("Model") then
+                    local laserWallFolder = plot:FindFirstChild("LaserWall")
+                    if laserWallFolder then
+                        for _, obj in ipairs(laserWallFolder:GetChildren()) do
+                            if obj:IsA("Model") or obj:IsA("BasePart") then
+                                obj:Destroy()
+                            end
+                        end
+                    end
+                end
+            end
+        end
+        print("")
+    end
+})
+
+
+
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+local Toggle = Tabs.Main:AddToggle("AutoSlapNearby", {
+    Title = "Slap Aura",
+    Default = false
+})
+
+Toggle:OnChanged(function()
+    if Options.AutoSlapNearby.Value then
+        task.spawn(function()
+            while Options.AutoSlapNearby.Value do
+                local character = LocalPlayer.Character
+                local hrp = character and character:FindFirstChild("HumanoidRootPart")
+                local tool = character and character:FindFirstChild("Basic Slapper")
+
+                if hrp and tool and tool:IsA("Tool") then
+                    for _, player in ipairs(Players:GetPlayers()) do
+                        if player ~= LocalPlayer then
+                            local otherChar = player.Character
+                            local otherHRP = otherChar and otherChar:FindFirstChild("HumanoidRootPart")
+                            if otherHRP then
+                                local distance = (hrp.Position - otherHRP.Position).Magnitude
+                                if distance <= 5 then
+                                    tool:Activate()
+                                    break
+                                end
+                            end
+                        end
+                    end
+                end
+                task.wait(0.05)
+            end
+        end)
+    end
+end)
+
+Options.AutoSlapNearby:SetValue(false)
+
+
+
+
+
+
+
+
+-- Addons:
+-- SaveManager (Allows you to have a configuration system)
+-- InterfaceManager (Allows you to have a interface managment system)
+
+-- Hand the library over to our managers
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+
+-- Ignore keys that are used by ThemeManager.
+-- (we dont want configs to save themes, do we?)
+SaveManager:IgnoreThemeSettings()
+
+-- You can add indexes of elements the save manager should ignore
+SaveManager:SetIgnoreIndexes({})
+
+-- use case for doing it this way:
+-- a script hub could have themes in a global folder
+-- and game configs in a separate folder per game
+InterfaceManager:SetFolder("ForgeCloud")
+SaveManager:SetFolder("ForgeCloud/steal-a-capybara")
+
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+
+
+Window:SelectTab(1)
+
+-- You can use the SaveManager:LoadAutoloadConfig() to load a config
+-- which has been marked to be one that auto loads!
+SaveManager:LoadAutoloadConfig()
+end
