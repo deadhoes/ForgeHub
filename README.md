@@ -1,6 +1,6 @@
 # ForgeHub Loader
 
-**ForgeHub** is a free and open-source game hub for **Roblox**, designed to enhance your gameplay experience with supported games.
+**ForgeHub** is a free and not open-source game hub for **Roblox**, designed to enhance your gameplay experience with supported games.
 
 ## Loader
 ```lua
