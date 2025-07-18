@@ -3,221 +3,231 @@ local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/d
 local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
 
 local Window = Fluent:CreateWindow({
-    Title = "ForgeHub: Steal a Capybara Script" .. Fluent.Version,
-    SubTitle = "ForgeTeam",
+    Title = "ForgeHub "..Fluent.Version,
+    SubTitle = "Ants",
     TabWidth = 160,
-    Size = UDim2.fromOffset(580, 460),
-    Acrylic = true, -- The blur may be detectable, setting this to false disables blur entirely
+    Size = UDim2.fromOffset(650, 500),
+    Acrylic = true,
     Theme = "Darker",
-    MinimizeKey = Enum.KeyCode.LeftControl -- Used when theres no MinimizeKeybind
+    MinimizeKey = Enum.KeyCode.LeftControl
 })
 
---Fluent provides Lucide Icons https://lucide.dev/icons/ for the tabs, icons are optional
 local Tabs = {
-    Main = Window:AddTab({ Title = "Main", Icon = "" }),
-    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+    Main = Window:AddTab({Title = "Main", Icon = "box"}),
+    Player = Window:AddTab({Title = "Player", Icon = "user"}),
+    Teleport = Window:AddTab({Title = "Teleport", Icon = "map-pin"}),
+    Visuals = Window:AddTab({Title = "Visuals", Icon = "eye"}),
+    Settings = Window:AddTab({Title = "Settings", Icon = "settings"})
 }
-
-local Options = Fluent.Options
-
-do
-
-
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+
 local LocalPlayer = Players.LocalPlayer
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild("Humanoid")
+local RootPart = Character:WaitForChild("HumanoidRootPart")
 
-local running = false
+Tabs.Main:AddToggle("AutoUseEgg", {
+    Title = "Auto Place Eggs",
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while Fluent.Options.AutoUseEgg.Value do
+                    local backpack = LocalPlayer:FindFirstChild("Backpack")
+                    if backpack then
+                        for _,tool in ipairs(backpack:GetChildren()) do
+                            if tool:IsA("Tool") and tool.Name:find("Egg") then
+                                ReplicatedStorage.Remotes.UseEgg:FireServer(tool.Name:gsub("%s*Egg$", ""), tool)
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
 
-local function getAntNameFromTool(tool)
-    local toolName = tool.Name
-    local antName = toolName:gsub("%s*Egg$", "")
-    return antName
-end
+local antNames = {"Basic Ant", "Bullet Ant", "Titan Ant", "Crystal Ant", "Golden Ant", "Yellow Crazy Ant", "Fire Ant"}
 
-local Toggle = Tabs.Main:AddToggle("AutoUseEgg", {Title = "Auto Place Eggs", Default = false})
-
-Toggle:OnChanged(function()
-	running = Options.AutoUseEgg.Value
-
-	if running then
-		task.spawn(function()
-			while running do
-				local backpack = LocalPlayer:FindFirstChild("Backpack")
-				if backpack then
-					local tool = nil
-					for _, t in pairs(backpack:GetChildren()) do
-						if t:IsA("Tool") and t.Name:find("Egg") then
-							tool = t
-							break
-						end
-					end
-
-					if tool then
-						local antName = getAntNameFromTool(tool)
-						local args = {
-							antName,
-							tool
-						}
-						ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("UseEgg"):FireServer(unpack(args))
-					end
-				end
-				task.wait(0.1)
-			end
-		end)
-	end
-end)
-
-Options.AutoUseEgg:SetValue(false)
-
-
-
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local LocalPlayer = Players.LocalPlayer
-
-local antNames = {
-    "Basic Ant",
-    "Bullet Ant",
-    "Titan Ant",
-    "Crystal Ant",
-    "Golden Ant",
-    "Yellow Crazy Ant",
-    "Fire Ant",
-}
-
-local MultiDropdown = Tabs.Main:AddDropdown("MultiDropdown", {
+Tabs.Main:AddDropdown("AntSelection", {
     Title = "Select Ants to Buy",
     Values = antNames,
     Multi = true,
     Default = {},
-})
-
-MultiDropdown:SetValue({})
-
-local selectedAnts = {}
-
-MultiDropdown:OnChanged(function(value)
-    selectedAnts = {}
-    for name, isSelected in pairs(value) do
-        if isSelected then
-            selectedAnts[name] = true
+    Callback = function(selection)
+        Fluent.Options.SelectedAnts = {}
+        for name,selected in pairs(selection) do
+            if selected then Fluent.Options.SelectedAnts[name] = true end
         end
     end
-end)
-
-local Toggle = Tabs.Main:AddToggle("AutoFireProximity", {
-    Title = "Auto Buy Ants",
-    Default = false,
 })
 
-local running = false
-
-Toggle:OnChanged(function(value)
-    running = value
-    if running then
-        task.spawn(function()
-            while running do
-                local eggsFolder = workspace:FindFirstChild("Eggs")
-                if eggsFolder then
-                    for _, model in ipairs(eggsFolder:GetChildren()) do
-                        if model:IsA("Model") and selectedAnts[model.Name] then
-                            local hrp = model:FindFirstChild("HumanoidRootPart")
-                            if hrp then
-                                for _, prompt in ipairs(hrp:GetChildren()) do
-                                    if prompt:IsA("ProximityPrompt") and prompt.Name == "ProximityPrompt" then
-                                        fireproximityprompt(prompt, 0, true)
+Tabs.Main:AddToggle("AutoBuyAnts", {
+    Title = "Auto Buy Ants",
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                while Fluent.Options.AutoBuyAnts.Value do
+                    local eggsFolder = Workspace:FindFirstChild("Eggs")
+                    if eggsFolder then
+                        for _,model in ipairs(eggsFolder:GetChildren()) do
+                            if model:IsA("Model") and Fluent.Options.SelectedAnts[model.Name] then
+                                local hrp = model:FindFirstChild("HumanoidRootPart")
+                                if hrp then
+                                    for _,prompt in ipairs(hrp:GetChildren()) do
+                                        if prompt:IsA("ProximityPrompt") then
+                                            fireproximityprompt(prompt, 0, true)
+                                        end
                                     end
                                 end
                             end
                         end
                     end
+                    task.wait(0.1)
                 end
-                task.wait(0.1)
-            end
-        end)
+            end)
+        end
     end
-end)
-
-Options.AutoFireProximity:SetValue(false)
-
-
-
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-
-local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
-
-local Toggle = Tabs.Main:AddToggle("AutoFireTouchTokens", {
-    Title = "Auto Collect Seed Tokens",
-    Default = false,
 })
 
-local running = false
+Tabs.Main:AddToggle("AutoCollectTokens", {
+    Title = "Auto Collect Tokens",
+    Default = false,
+    Callback = function(state)
+        if state then
+            task.spawn(function()
+                local hrp = Character:WaitForChild("HumanoidRootPart")
+                while Fluent.Options.AutoCollectTokens.Value do
+                    local tokensFolder = Workspace:FindFirstChild("Tokens")
+                    if tokensFolder then
+                        for _,part in ipairs(tokensFolder:GetDescendants()) do
+                            if part:IsA("BasePart") and part:FindFirstChildWhichIsA("TouchTransmitter") then
+                                firetouchinterest(hrp, part, 0)
+                                firetouchinterest(hrp, part, 1)
+                            end
+                        end
+                    end
+                    task.wait(0.1)
+                end
+            end)
+        end
+    end
+})
 
-local function fireTouch(part)
-    if not hrp or not part then return end
+Tabs.Player:AddSlider("WalkSpeed", {
+    Title = "Walk Speed",
+    Default = 16,
+    Min = 16,
+    Max = 200,
+    Rounding = 0,
+    Callback = function(value)
+        Humanoid.WalkSpeed = value
+    end
+})
 
-    firetouchinterest(hrp, part, 0)
-    firetouchinterest(hrp, part, 1)
-end
+Tabs.Player:AddSlider("JumpPower", {
+    Title = "Jump Power",
+    Default = 50,
+    Min = 50,
+    Max = 300,
+    Rounding = 0,
+    Callback = function(value)
+        Humanoid.JumpPower = value
+    end
+})
 
-Toggle:OnChanged(function(value)
-    running = value
+Tabs.Player:AddToggle("InfiniteJump", {
+    Title = "Infinite Jump",
+    Default = false,
+    Callback = function(state)
+        if state then
+            UserInputService.JumpRequest:Connect(function()
+                if Fluent.Options.InfiniteJump.Value then
+                    Humanoid:ChangeState("Jumping")
+                end
+            end)
+        end
+    end
+})
 
-    if running then
-        task.spawn(function()
-            while running do
-                local folder = workspace:FindFirstChild("Tokens")
-                if folder then
-                    for _, part in ipairs(folder:GetDescendants()) do
-                        if part:IsA("BasePart") and part:FindFirstChildWhichIsA("TouchTransmitter") then
-                            fireTouch(part)
+Tabs.Player:AddToggle("Noclip", {
+    Title = "Noclip",
+    Default = false,
+    Callback = function(state)
+        if state then
+            game:GetService("RunService").Stepped:Connect(function()
+                if Fluent.Options.Noclip.Value then
+                    for _,part in ipairs(Character:GetDescendants()) do
+                        if part:IsA("BasePart") then
+                            part.CanCollide = false
                         end
                     end
                 end
-                task.wait(0.1)
-            end
-        end)
+            end)
+        end
     end
-end)
+})
 
-Options.AutoFireTouchTokens:SetValue(false)
+local teleportLocations = {
+    ["Egg Buy"] = CFrame.new(0, 10, 0),
+    ["Secret Area"] = CFrame.new(100, 50, 100),
+    ["Treasure Room"] = CFrame.new(-200, 25, -150)
+}
 
+Tabs.Teleport:AddDropdown("Locations", {
+    Title = "Teleport Locations",
+    Values = {"Egg Buy", "Secret Area", "Treasure Room"},
+    Multi = false,
+    Default = nil,
+    Callback = function(selection)
+        if teleportLocations[selection] then
+            local tweenInfo = TweenInfo.new(1, Enum.EasingStyle.Quad)
+            local tween = TweenService:Create(RootPart, tweenInfo, {CFrame = teleportLocations[selection]})
+            tween:Play()
+        end
+    end
+})
 
+Tabs.Visuals:AddToggle("EspPlayers", {
+    Title = "ESP Players",
+    Default = false,
+    Callback = function(state)
+        if state then
+            for _,player in ipairs(Players:GetPlayers()) do
+                if player ~= LocalPlayer and player.Character then
+                    local highlight = Instance.new("Highlight")
+                    highlight.Parent = player.Character
+                    highlight.FillColor = Color3.new(1, 0, 0)
+                    highlight.OutlineColor = Color3.new(1, 1, 0)
+                end
+            end
+        else
+            for _,player in ipairs(Players:GetPlayers()) do
+                if player.Character and player.Character:FindFirstChild("Highlight") then
+                    player.Character.Highlight:Destroy()
+                end
+            end
+        end
+    end
+})
 
-
-
--- Addons:
--- SaveManager (Allows you to have a configuration system)
--- InterfaceManager (Allows you to have a interface managment system)
-
--- Hand the library over to our managers
 SaveManager:SetLibrary(Fluent)
 InterfaceManager:SetLibrary(Fluent)
-
--- Ignore keys that are used by ThemeManager.
--- (we dont want configs to save themes, do we?)
 SaveManager:IgnoreThemeSettings()
-
--- You can add indexes of elements the save manager should ignore
-SaveManager:SetIgnoreIndexes({})
-
--- use case for doing it this way:
--- a script hub could have themes in a global folder
--- and game configs in a separate folder per game
-InterfaceManager:SetFolder("ForgeCloud")
-SaveManager:SetFolder("ForgeCloud/steal-a-brainrot")
-
+InterfaceManager:SetFolder("ForgeHub")
+SaveManager:SetFolder("ForgeHub/config")
 InterfaceManager:BuildInterfaceSection(Tabs.Settings)
 SaveManager:BuildConfigSection(Tabs.Settings)
 
 Window:SelectTab(1)
-
--- You can use the SaveManager:LoadAutoloadConfig() to load a config
--- which has been marked to be one that auto loads!
 SaveManager:LoadAutoloadConfig()
-end
+
+Humanoid.WalkSpeed = Fluent.Options.WalkSpeed.Value
+Humanoid.JumpPower = Fluent.Options.JumpPower.Value
